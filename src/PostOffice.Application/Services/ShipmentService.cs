@@ -2,6 +2,7 @@ using PostOffice.Application.Abstractions;
 using PostOffice.Application.Common.Exceptions;
 using PostOffice.Application.Common.Pagination;
 using PostOffice.Application.Contracts.Shipments;
+using PostOffice.Application.Interface;
 using PostOffice.Domain.Entities;
 
 namespace PostOffice.Application.Services;

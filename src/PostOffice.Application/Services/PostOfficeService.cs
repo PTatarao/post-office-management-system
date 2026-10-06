@@ -1,6 +1,6 @@
-using PostOffice.Application.Abstractions;
 using PostOffice.Application.Common.Exceptions;
 using PostOffice.Application.Contracts.PostOffices;
+using PostOffice.Application.Interface;
 using PostOffice.Domain.Entities;
 using PostOfficeEntity = PostOffice.Domain.Entities.PostOffice;
 

@@ -3,6 +3,8 @@ using PostOffice.Application.Common.Exceptions;
 using PostOffice.Application.Services;
 using PostOffice.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddAuthentication();
+builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
 
@@ -35,7 +37,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseHttpsRedirection();
 
 app.MapControllers();

@@ -53,6 +53,9 @@
     <Content Remove="C:\Users\Admin\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-netcore\zh-Hant\System.CommandLine.resources.dll" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="MongoDB.Driver" Version="2.27.0" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\PostOffice.Domain\PostOffice.Domain.csproj" />
     <ProjectReference Include="..\PostOffice.Application\PostOffice.Application.csproj" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />

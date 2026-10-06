@@ -1,7 +1,10 @@
-using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Driver;
 using PostOffice.Application.Abstractions;
 using PostOffice.Application.Common.Pagination;
 using PostOffice.Application.Contracts.Shipments;
+using PostOffice.Application.Interface;
 using PostOffice.Domain.Entities;
 using PostOfficeEntity = PostOffice.Domain.Entities.PostOffice;
 
@@ -9,59 +12,78 @@ namespace PostOffice.Infrastructure.Persistence;
 
 public sealed class PostOfficeRepository(PostOfficeDbContext db) : IPostOfficeRepository
 {
+    private readonly IMongoCollection<PostOfficeEntity> _collection = db.PostOffices;
+
     public Task<PostOfficeEntity?> GetByIdAsync(Guid id, CancellationToken ct) =>
-        db.PostOffices.FirstOrDefaultAsync(x => x.Id == id, ct);
+        _collection.Find(x => x.Id == id).FirstOrDefaultAsync(ct);
 
-    public Task<bool> ExistsByZipCodeAsync(string zipCode, Guid? excludeId, CancellationToken ct) =>
-        db.PostOffices.AnyAsync(x => x.ZipCode == zipCode && (!excludeId.HasValue || x.Id != excludeId.Value), ct);
+    public Task<bool> ExistsByZipCodeAsync(string zipCode, Guid? excludeId, CancellationToken ct)
+    {
+        var filter = Builders<PostOfficeEntity>.Filter.Eq(x => x.ZipCode, zipCode);
+        if (excludeId.HasValue) filter &= Builders<PostOfficeEntity>.Filter.Ne(x => x.Id, excludeId.Value);
+        return _collection.Find(filter).AnyAsync(ct);
+    }
 
-    public async Task AddAsync(PostOfficeEntity entity, CancellationToken ct) => await db.PostOffices.AddAsync(entity, ct);
-    public void Remove(PostOfficeEntity entity) => db.PostOffices.Remove(entity);
+    public Task AddAsync(PostOfficeEntity entity, CancellationToken ct) => _collection.InsertOneAsync(entity, cancellationToken: ct);
+    public void Remove(PostOfficeEntity entity) => _collection.DeleteOne(x => x.Id == entity.Id);
     public Task SaveChangesAsync(CancellationToken ct) => db.SaveChangesAsync(ct);
 }
 
 public sealed class ShipmentRepository(PostOfficeDbContext db) : IShipmentRepository
 {
+    private readonly IMongoCollection<Shipment> _collection = db.Shipments;
+
     public Task<Shipment?> GetByIdAsync(Guid id, CancellationToken ct) =>
-        db.Shipments.Include(x => x.StatusHistory).FirstOrDefaultAsync(x => x.Id == id, ct);
+        _collection.Find(x => x.Id == id).FirstOrDefaultAsync(ct);
 
-    public Task<bool> ExistsByShipmentNumberAsync(string shipmentNumber, Guid? excludeId, CancellationToken ct) =>
-        db.Shipments.AnyAsync(x => x.ShipmentNumber == shipmentNumber && (!excludeId.HasValue || x.Id != excludeId.Value), ct);
+    public Task<bool> ExistsByShipmentNumberAsync(string shipmentNumber, Guid? excludeId, CancellationToken ct)
+    {
+        var filter = Builders<Shipment>.Filter.Eq(x => x.ShipmentNumber, shipmentNumber);
+        if (excludeId.HasValue) filter &= Builders<Shipment>.Filter.Ne(x => x.Id, excludeId.Value);
+        return _collection.Find(filter).AnyAsync(ct);
+    }
 
-    public async Task AddAsync(Shipment entity, CancellationToken ct) => await db.Shipments.AddAsync(entity, ct);
-    public void Remove(Shipment entity) => db.Shipments.Remove(entity);
+    public Task AddAsync(Shipment entity, CancellationToken ct) => _collection.InsertOneAsync(entity, cancellationToken: ct);
+    public void Remove(Shipment entity) => _collection.DeleteOne(x => x.Id == entity.Id);
 
     public async Task<PagedResult<Shipment>> SearchAsync(ShipmentFilter filter, int pageNumber, int pageSize, CancellationToken ct)
     {
-        IQueryable<Shipment> query = db.Shipments.AsNoTracking();
+        var builder = Builders<Shipment>.Filter;
+        var f = builder.Empty;
 
-        if (filter.Status.HasValue) query = query.Where(x => x.Status == filter.Status.Value);
-        if (filter.LocationPostOfficeId.HasValue) query = query.Where(x => x.CurrentPostOfficeId == filter.LocationPostOfficeId.Value);
-        if (!string.IsNullOrWhiteSpace(filter.ShipmentNumber)) query = query.Where(x => x.ShipmentNumber.Contains(filter.ShipmentNumber));
+        if (filter.Status.HasValue) f &= builder.Eq(x => x.Status, filter.Status.Value);
+        if (filter.LocationPostOfficeId.HasValue) f &= builder.Eq(x => x.CurrentPostOfficeId, filter.LocationPostOfficeId.Value);
+        if (!string.IsNullOrWhiteSpace(filter.ShipmentNumber)) f &= builder.Regex(x => x.ShipmentNumber, new BsonRegularExpression(filter.ShipmentNumber, "i"));
+
         if (!string.IsNullOrWhiteSpace(filter.ShipmentType))
         {
-            if (filter.ShipmentType.Equals("Package", StringComparison.OrdinalIgnoreCase))
-                query = query.OfType<Package>();
-            else if (filter.ShipmentType.Equals("Letter", StringComparison.OrdinalIgnoreCase))
-                query = query.OfType<Letter>();
+            // Try to filter by the discriminator stored by the MongoDB C# driver (_t).
+            var typeName = filter.ShipmentType.Equals("Package", StringComparison.OrdinalIgnoreCase) ? nameof(Package)
+                : filter.ShipmentType.Equals("Letter", StringComparison.OrdinalIgnoreCase) ? nameof(Letter) : null;
+
+            if (!string.IsNullOrEmpty(typeName))
+                f &= builder.Eq("_t", typeName);
         }
 
         if (filter.Weight.HasValue)
         {
-            query = filter.Weight.Value switch
+            f &= filter.Weight.Value switch
             {
-                WeightCategory.LessThan1Kg => query.Where(x => x.WeightKg < 1m),
-                WeightCategory.Between1And5Kg => query.Where(x => x.WeightKg >= 1m && x.WeightKg <= 5m),
-                WeightCategory.MoreThan5Kg => query.Where(x => x.WeightKg > 5m),
-                _ => query
+                WeightCategory.LessThan1Kg => builder.Lt(x => x.WeightKg, 1m),
+                WeightCategory.Between1And5Kg => builder.And(builder.Gte(x => x.WeightKg, 1m), builder.Lte(x => x.WeightKg, 5m)),
+                WeightCategory.MoreThan5Kg => builder.Gt(x => x.WeightKg, 5m),
+                _ => builder.Empty
             };
         }
 
-        var total = await query.CountAsync(ct);
-        var items = await query.OrderByDescending(x => x.CreatedAtUtc)
-            .Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(ct);
+        var total = await _collection.CountDocumentsAsync(f, cancellationToken: ct);
+        var items = await _collection.Find(f)
+            .SortByDescending(x => x.CreatedAtUtc)
+            .Skip((pageNumber - 1) * pageSize)
+            .Limit(pageSize)
+            .ToListAsync(ct);
 
-        return new PagedResult<Shipment>(items, pageNumber, pageSize, total);
+        return new PagedResult<Shipment>(items, pageNumber, pageSize, (int)total);
     }
 
     public Task SaveChangesAsync(CancellationToken ct) => db.SaveChangesAsync(ct);

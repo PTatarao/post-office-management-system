@@ -1,7 +1,7 @@
 using PostOffice.Domain.Entities;
 using PostOfficeEntity = PostOffice.Domain.Entities.PostOffice;
 
-namespace PostOffice.Application.Abstractions;
+namespace PostOffice.Application.Interface;
 
 public interface IPostOfficeRepository
 {

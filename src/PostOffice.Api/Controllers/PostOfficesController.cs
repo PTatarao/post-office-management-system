@@ -9,26 +9,35 @@ namespace PostOffice.Api.Controllers;
 public sealed class PostOfficesController(PostOfficeService service) : ControllerBase
 {
     [HttpGet("{id:guid}")]
-    public Task<PostOfficeDto> Get(Guid id, CancellationToken ct) => service.GetAsync(id, ct);
+    public Task<PostOfficeDto> Get(Guid id) 
+    { 
+        return service.GetAsync(id);
+    }
+
+    [HttpGet]
+    public Task<IEnumerable<PostOfficeDto>> GetAll()
+    {
+       return service.GetAllAsync();
+    }
 
     [HttpPost]
-    public async Task<ActionResult<PostOfficeDto>> Create(CreatePostOfficeRequest request, CancellationToken ct)
+    public async Task<ActionResult<PostOfficeDto>> Create(CreatePostOfficeRequest request)
     {
-        var result = await service.CreateAsync(request, ct);
+        var result = await service.CreateAsync(request);
         return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, UpdatePostOfficeRequest request, CancellationToken ct)
+    public async Task<IActionResult> Update(Guid id, UpdatePostOfficeRequest request)
     {
-        await service.UpdateAsync(id, request, ct);
+        await service.UpdateAsync(id, request);
         return NoContent();
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    public async Task<IActionResult> Delete(Guid id)
     {
-        await service.DeleteAsync(id, ct);
+        await service.DeleteAsync(id);
         return NoContent();
     }
 }

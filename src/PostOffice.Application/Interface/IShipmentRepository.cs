@@ -7,10 +7,9 @@ namespace PostOffice.Application.Abstractions;
 
 public interface IShipmentRepository
 {
-    Task<Shipment?> GetByIdAsync(Guid id, CancellationToken ct);
-    Task<bool> ExistsByShipmentNumberAsync(string shipmentNumber, Guid? excludeId, CancellationToken ct);
-    Task AddAsync(Shipment shipment, CancellationToken ct);
+    Task<Shipment?> GetByIdAsync(Guid id);
+    Task<bool> ExistsByShipmentNumberAsync(string shipmentNumber, Guid? Id);
+    Task AddAsync(Shipment shipment);
     void Remove(Shipment shipment);
-    Task<PagedResult<Shipment>> SearchAsync(ShipmentFilter filter, int pageNumber, int pageSize, CancellationToken ct);
-    Task SaveChangesAsync(CancellationToken ct);
+    Task<PagedResult<Shipment>> SearchAsync(ShipmentFilter filter, int pageNumber, int pageSize);
 }

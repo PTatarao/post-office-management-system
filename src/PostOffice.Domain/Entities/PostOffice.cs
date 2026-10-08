@@ -1,10 +1,8 @@
 namespace PostOffice.Domain.Entities;
 
-public sealed class PostOffice
+public class PostOffice
 {
-    private PostOffice() { }
-
-    public PostOffice(string zipCode, string name, string city)
+     public PostOffice(string zipCode, string name, string city)
     {
         Id = Guid.NewGuid();
         SetDetails(zipCode, name, city);
@@ -16,18 +14,22 @@ public sealed class PostOffice
     public string Name { get; private set; } = null!;
     public string City { get; private set; } = null!;
     public DateTime CreatedAtUtc { get; private set; }
-
-    public ICollection<Shipment> CurrentShipments { get; private set; } = new List<Shipment>();
-    public ICollection<Shipment> OriginShipments { get; private set; } = new List<Shipment>();
-    public ICollection<Shipment> DestinationShipments { get; private set; } = new List<Shipment>();
-
     public void Update(string zipCode, string name, string city) => SetDetails(zipCode, name, city);
 
     private void SetDetails(string zipCode, string name, string city)
     {
-        if (string.IsNullOrWhiteSpace(zipCode)) throw new ArgumentException("ZIP code is required.");
-        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Post office name is required.");
-        if (string.IsNullOrWhiteSpace(city)) throw new ArgumentException("City is required.");
+        if (string.IsNullOrWhiteSpace(zipCode))
+        { 
+            throw new ArgumentException("ZIP code is required.");
+        }
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Post office name is required.");
+        }
+        if (string.IsNullOrWhiteSpace(city))
+        {
+            throw new ArgumentException("City is required.");
+        }
 
         ZipCode = zipCode.Trim();
         Name = name.Trim();

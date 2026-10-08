@@ -21,17 +21,4 @@ public sealed class PostOfficeDataAccess
     {
         return _database.GetCollection<Shipment>("shipments");
     }
-    public IMongoCollection<Letter> Letters()
-    {
-        return _database.GetCollection<Letter>("letters");
-    } 
-    public IMongoCollection<Package> Packages() {
-        return _database.GetCollection<Package>("packages");
-    }
-    public IMongoCollection<ShipmentStatusHistory> ShipmentStatusHistory()
-    {
-
-        return _database.GetCollection<ShipmentStatusHistory>("shipment_status_history");
-    }
-
-}
+ }

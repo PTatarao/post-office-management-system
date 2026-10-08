@@ -37,6 +37,7 @@ public sealed class PostOfficeService(IPostOfficeRepository repository)
                 throw new InvalidOperationException($"ZIP code '{request.ZipCode}' already exists.");
 
             entity.Update(request.ZipCode, request.Name, request.City);
+           repository.Update(entity);
         }
     }
 

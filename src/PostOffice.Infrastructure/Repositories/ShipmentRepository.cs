@@ -39,29 +39,8 @@ public sealed class ShipmentRepository(PostOfficeDataAccess db) : IShipmentRepos
         var builder = Builders<Shipment>.Filter;
         var f = builder.Empty;
 
-        if (filter.Status.HasValue) f &= builder.Eq(x => x.Status, filter.Status.Value);
-        if (filter.LocationPostOfficeId.HasValue) f &= builder.Eq(x => x.CurrentPostOfficeId, filter.LocationPostOfficeId.Value);
-        if (!string.IsNullOrWhiteSpace(filter.ShipmentNumber)) f &= builder.Regex(x => x.ShipmentNumber, new BsonRegularExpression(filter.ShipmentNumber, "i"));
-
-        if (!string.IsNullOrWhiteSpace(filter.ShipmentType))
-        {
-              var typeName = filter.ShipmentType.Equals("Package", StringComparison.OrdinalIgnoreCase) ? nameof(Package)
-                : filter.ShipmentType.Equals("Letter", StringComparison.OrdinalIgnoreCase) ? nameof(Letter) : null;
-
-            if (!string.IsNullOrEmpty(typeName))
-                f &= builder.Eq("_t", typeName);
-        }
-
-        if (filter.Weight.HasValue)
-        {
-            f &= filter.Weight.Value switch
-            {
-                WeightCategory.LessThan1Kg => builder.Lt(x => x.WeightKg, 1m),
-                WeightCategory.Between1And5Kg => builder.And(builder.Gte(x => x.WeightKg, 1m), builder.Lte(x => x.WeightKg, 5m)),
-                WeightCategory.MoreThan5Kg => builder.Gt(x => x.WeightKg, 5m),
-                _ => builder.Empty
-            };
-        }
+        if (!string.IsNullOrWhiteSpace(filter.ShipmentNumber))
+            f &= builder.Regex(x => x.ShipmentNumber, new BsonRegularExpression(filter.ShipmentNumber, "i"));
 
         var total = await _collection.CountDocumentsAsync(f);
         var items = await _collection.Find(f)

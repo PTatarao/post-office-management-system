@@ -9,5 +9,6 @@ public interface IPostOfficeRepository
     Task<List<PostOfficeEntity>> GetAllAsync();
     Task<bool> ExistsByZipCodeAsync(string zipCode, Guid? excludeId);
     Task AddAsync(PostOfficeEntity postOffice);
+    void Update(PostOfficeEntity postOffice);
     void Remove(PostOfficeEntity postOffice);
 }

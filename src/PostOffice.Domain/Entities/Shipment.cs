@@ -1,10 +1,9 @@
 namespace PostOffice.Domain.Entities;
 
-public abstract class Shipment
+public class Shipment
 {
-    protected Shipment() { }
 
-    protected Shipment(string shipmentNumber, decimal weightKg, Guid originPostOfficeId, Guid destinationPostOfficeId)
+    public Shipment(string shipmentNumber, decimal weightKg, Guid originPostOfficeId, Guid destinationPostOfficeId)
     {
         Id = Guid.NewGuid();
         ShipmentNumber = shipmentNumber;
@@ -61,14 +60,12 @@ public abstract class Shipment
 
 public sealed class Letter : Shipment
 {
-    private Letter() { }
     public Letter(string shipmentNumber, decimal weightKg, Guid originPostOfficeId, Guid destinationPostOfficeId)
         : base(shipmentNumber, weightKg, originPostOfficeId, destinationPostOfficeId) { }
 }
 
 public sealed class Package : Shipment
 {
-    private Package() { }
     public Package(string shipmentNumber, decimal weightKg, Guid originPostOfficeId, Guid destinationPostOfficeId)
         : base(shipmentNumber, weightKg, originPostOfficeId, destinationPostOfficeId) { }
 }

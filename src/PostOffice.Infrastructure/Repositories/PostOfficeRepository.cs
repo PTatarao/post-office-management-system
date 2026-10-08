@@ -32,7 +32,11 @@ namespace PostOffice.Infrastructure
         public void Remove(PostOfficeEntity entity)
         {
             _collection.DeleteOne(x => x.Id == entity.Id);
-        } 
+        }
+        public void Update(PostOfficeEntity entity)
+        {
+            _collection.ReplaceOne(x => x.Id == entity.Id, entity);
+        }
     }
 
 }
